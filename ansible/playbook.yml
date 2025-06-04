@@ -1,0 +1,59 @@
+---
+- name: Setup Yii2 Application Environment
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Update APT packages
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - nginx
+          - git
+          - php
+          - php-fpm
+          - php-mysql
+        state: present
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Add user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Initialize Docker Swarm
+      shell: docker swarm init
+      ignore_errors: yes
+
+    - name: Copy NGINX configuration
+      copy:
+        src: ../nginx/default.conf
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart NGINX
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: Clone application repository
+      git:
+        repo: https://github.com/yourusername/yourrepo.git
+        dest: /home/ubuntu/devops-assessment
+        version: main
+
+    - name: Deploy Docker Stack
+      shell: docker stack deploy -c /home/ubuntu/devops-assessment/docker/docker-compose.yml yii2_app

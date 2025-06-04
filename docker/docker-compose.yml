@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  yii2-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yourdockerhubusername/yii2-app:latest
+    ports:
+      - "9000:9000"
+    networks:
+      - yii2-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  yii2-network:
+    driver: overlay
